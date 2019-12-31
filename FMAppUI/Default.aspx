@@ -17,6 +17,7 @@
             </p>
             <p>
                 <asp:Button id="btnUpload" runat="server" Text="Upload" OnClick="btnUpload_click" CssClass="btn btn-primary"/>
+                <asp:Label ID="lblMsg" runat="server" CssClass="bg-info" Visible="false"></asp:Label>
             </p>
         </div>
         <div class="col-md-8">

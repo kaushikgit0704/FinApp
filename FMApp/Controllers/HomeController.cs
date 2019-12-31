@@ -37,7 +37,11 @@ namespace FMApp.Controllers
             var azureStorageConnString = ConfigurationManager.AppSettings["storage:account:key1:connection"];
             //var blobName = reqData.AccountNo + "_" + DateTime.Now.ToString() + "_" + Guid.NewGuid().ToString();
             //var blobName = DateTime.Now.ToString() + "_" + Guid.NewGuid().ToString();
-            var localPath = HttpContext.Current.Server.MapPath("~/App_Data/");
+            var localPath = HttpContext.Current.Request.MapPath("~/App_Data/");
+            if (!System.IO.Directory.Exists(localPath))
+            {
+                System.IO.Directory.CreateDirectory(localPath);
+            }
             var localFilePath = Path.Combine(localPath, blobName);
             try
             {

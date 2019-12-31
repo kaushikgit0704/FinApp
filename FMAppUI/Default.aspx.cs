@@ -11,32 +11,46 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using Models;
+using System.Net.Http.Headers;
+using Microsoft.Owin;
+using Owin;
 
 namespace FMAppUI
 {
     public partial class _Default : Page
     {
+        string inputPath = HttpContext.Current.Server.MapPath("~/App_Data/input/");
+        string outputPath = HttpContext.Current.Server.MapPath("~/App_Data/output/");
+        
         protected void Page_Load(object sender, EventArgs e)
-        {
-            //if (!fileUpload.HasFile)
-            //{
-            //    btnUpload.Enabled = false;
-            //}
-            //else
-            //{
-            //    btnUpload.Enabled = true;
-            //}
+        {           
+            if (!Page.IsPostBack)
+            {
+                lblMsg.Text = "";
+                lblMsg.Visible = true;
+
+                if (!System.IO.Directory.Exists(inputPath))
+                {
+                    System.IO.Directory.CreateDirectory(inputPath);
+                }
+                if (!System.IO.Directory.Exists(outputPath))
+                {
+                    System.IO.Directory.CreateDirectory(outputPath);
+                }
+
+                //lblMsg.Text = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+            }
         }
 
         protected void btnUpload_click(object sender, EventArgs e)
         {
             if (fileUpload.HasFile)
-            {
-               var inputFilePath = HttpContext.Current.Server.MapPath("~/App_Data/input/" + fileUpload.FileName);
-               var outputFilePath = HttpContext.Current.Server.MapPath("~/App_Data/output/");
-               fileUpload.SaveAs(inputFilePath);
-               var jsonString = ConvertExcelToJson(inputFilePath, outputFilePath);
-               sendDataToAPI(jsonString); 
+            {                                
+                var inputFilePath = inputPath + fileUpload.FileName;
+                var outputFilePath = outputPath;
+                fileUpload.SaveAs(inputFilePath);
+                var jsonString = ConvertExcelToJson(inputFilePath, outputFilePath);
+                sendDataToAPI(jsonString); 
             }
         }
 
@@ -46,21 +60,25 @@ namespace FMAppUI
             {
                 using (var client = new HttpClient())
                 {
-                    client.BaseAddress = new Uri(ConfigurationManager.AppSettings["serviceURI"].ToString());
-                    //client.BaseAddress = new Uri(ConfigurationManager.AppSettings["azureServiceURI"].ToString());
+                    //client.BaseAddress = new Uri(ConfigurationManager.AppSettings["serviceURI"].ToString());
+                    client.BaseAddress = new Uri(ConfigurationManager.AppSettings["azureServiceURI"].ToString());
                     var spendDetails = new SpendDetails { AccountNo = txtAcc.Text, AccountDetails = spendData };
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Request.Headers["X-MS-TOKEN-AAD-ACCESS-TOKEN"]);
                     var postTask = client.PostAsJsonAsync<Object>(ConfigurationManager.AppSettings["apiName"].ToString(), spendDetails);
                     postTask.Wait();
                     if (postTask.Result.IsSuccessStatusCode)
                     {
+                        lblMsg.Text = "Details uploaded successfully";
                     }
                     else
                     {
+                        lblMsg.Text = "Upload failed";
                     }
                 }
             }
             catch (Exception ex)
             {
+                lblMsg.Text = ex.Message;
             }            
         }
 
@@ -119,6 +137,6 @@ namespace FMAppUI
                 cnn.Close();
             }            
             return JsonConvert.SerializeObject(rows);
-        }
+        }        
     }
 }
